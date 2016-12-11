@@ -1,57 +1,14 @@
-# Ember-my-radios
+# Ember-code-view
 
-Ember implementation of custom radios.
+Ember implementation of custom code-viewer, make code hightlight(html, js, css).
+
 
 ## Guide
 
 step1: template.hbs
 
 ```
-{{my-radios
-    content=model.list
-    optionValuePath="valx"
-    optionLabelPath="fname"
-    value=model.curr.val
-    name=model.curr.name
-}}
-```
 
-step2: data
-
-```
-list: [
-    { valx: '1', fname: '影视' },
-    { valx: '2', fname: '艺术' },
-    { valx: '3', fname: '剧目' },
-    { valx: '4', fname: '其它' }
-],
-
-curr: { val: '3', name: '剧目' },
-```
-
-step3: style (you can overwrite if you want)
-
-> tips: less base style
-
-```
-.my-radios {
-    font-size: 0;
-    input {
-        display: none;
-    }
-    span {
-        background: #560;
-        color: #fff;
-        display: inline-block;
-        font-size: 20px;
-        padding: 3px 10px;
-        border-radius: 3px;
-        margin: 0 2px;
-    }
-    input:checked + span {
-        background: #f60;
-    }
-}
 ```
 
 ## Access on Line
@@ -59,8 +16,8 @@ step3: style (you can overwrite if you want)
 
 ## Installation
 
-* `git clone https://github.com/rgy19930329/ember-my-radios.git`
-* `cd ember-my-radios`
+* `git clone https://github.com/rgy19930329/ember-code-view.git`
+* `cd ember-code-view`
 * `npm install`
 * `bower install`
 
