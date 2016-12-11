@@ -1,0 +1,11 @@
+{{#each content as |item index|}}
+<label>
+    {{#if (is-or (is-eq (obj-val item optionValuePath) value) (is-eq (obj-val item optionLabelPath) name) )}}
+        <input type="radio" value={{obj-val item optionValuePath}} name={{inputName}} checked="checked">
+        <span>{{obj-val item optionLabelPath}}</span>
+    {{else}}
+        {{input type="radio" value=(obj-val item optionValuePath) name=inputName}}
+        <span {{action "select" index}}>{{obj-val item optionLabelPath}}</span>
+    {{/if}}
+</label>
+{{/each}}

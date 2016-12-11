@@ -1,0 +1,23 @@
+.yahei {
+    font-family: "microsoft yahei";
+}
+
+/*---------my-radios--------*/
+.my-radios {
+    font-size: 0;
+}
+.my-radios input {
+    display: none;
+}
+.my-radios span {
+    background: #560;
+    color: #fff;
+    display: inline-block;
+    font-size: 20px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin: 0 2px;
+}
+.my-radios input:checked + span {
+    background: #f60;
+}
