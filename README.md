@@ -23,11 +23,11 @@ step1: template.hbs
 
 step2: copy kcodeview
 
-copy ember-code-view/vendor/kcodeview to your-project/vendor/kcodeview
+copy `ember-code-view/vendor/kcodeview` to `your-project/vendor/kcodeview`
 
 step3: pull in kcodeview
 
-add this code in your-project/ember-cli-bulid.js
+add this code in `your-project/ember-cli-bulid.js`
 
 ```
 app.import('vendor/kcodeview/KylinJS.js')
