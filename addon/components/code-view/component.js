@@ -4,29 +4,29 @@ import layout from './template';
 export default Ember.Component.extend({
 	layout,
 	tagName: 'div',
-    classNames: ['my-radios'],
-	content: [],
-	inputName: '',
-	optionValuePath: '',
-    optionLabelPath: '',
-	value: '',
-	name: '',
+    classNames: ['code-view'],
+    id: 'kcodeview',
+    lang: 'js', // 哪种语言(js, css, html)
 
 	init() {
 		this._super(...arguments);
 	    let str = this.randomString(5);
-        if(!this.get('inputName')){
-            this.set('inputName', str);
-        }
+        let newId = this.get('id') + str;
+        this.set('id', newId);
 	},
 
-    actions: {
-        select(index) {
-            let value = this.get('content')[index][this.get('optionValuePath')],
-                name = this.get('content')[index][this.get('optionLabelPath')];
-            this.set('value', value);
-            this.set('name', name);
-        }
+    didInsertElement() { 
+        var codeView = document.getElementById(this.get('id'));
+        var langMap = {
+            'js': KcodeviewJs(codeView),
+            'css': KcodeviewCss(codeView),
+            'html': KcodeviewHtml(codeView)
+        };
+        var myCodeView = langMap[this.get('lang')];
+        myCodeView.init({
+            'font-size': '18px',
+            'line-height': '28px'
+        });
     },
 
     // 生成随机字符串

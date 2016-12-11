@@ -4,19 +4,11 @@ export default Ember.Route.extend({
     routeName: 'index',
     listUrl: '',
 
-    list: [
-        { valx: '1', fname: '影视' },
-        { valx: '2', fname: '艺术' },
-        { valx: '3', fname: '剧目' },
-        { valx: '4', fname: '其它' }
-    ],
-
-    curr: { val: '3', name: '剧目' },
+    codeContent: '',
 
     model() {
         return Ember.RSVP.hash({
-            list: this.get('list'),
-            curr: this.get('curr'),
+            codeContent: this.get('codeContent')
         });
     },
 

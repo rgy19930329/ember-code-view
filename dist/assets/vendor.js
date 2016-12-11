@@ -99,29 +99,37 @@ var runningTests = false;
     this.deps      = !deps.length && callback.length ? defaultDeps : deps;
     this.module    = { exports: {} };
     this.callback  = callback;
-    this.finalized = false;
     this.hasExportsAsDep = false;
     this.isAlias = alias;
     this.reified = new Array(deps.length);
-    this._foundDeps = false;
-    this.isPending = false;
+
+    /*
+       Each module normally passes through these states, in order:
+         new       : initial state
+         pending   : this module is scheduled to be executed
+         reifying  : this module's dependencies are being executed
+         reified   : this module's dependencies finished executing successfully
+         errored   : this module's dependencies failed to execute
+         finalized : this module executed successfully
+     */
+    this.state = 'new';
+
   }
 
   Module.prototype.makeDefaultExport = function() {
     var exports = this.module.exports;
     if (exports !== null &&
         (typeof exports === 'object' || typeof exports === 'function') &&
-          exports['default'] === undefined) {
+          exports['default'] === undefined && !Object.isFrozen(exports)) {
       exports['default'] = exports;
     }
   };
 
   Module.prototype.exports = function() {
-    if (this.finalized) { return this.module.exports; }
+    // if finalized, there is no work to do. If reifying, there is a
+    // circular dependency so we must return our (partial) exports.
+    if (this.state === 'finalized' || this.state === 'reifying') { return this.module.exports; }
     stats.exports++;
-
-    this.finalized = true;
-    this.isPending = false;
 
     if (loader.wrapModules) {
       this.callback = loader.wrapModules(this.name, this.callback);
@@ -130,6 +138,7 @@ var runningTests = false;
     this.reify();
 
     var result = this.callback.apply(this, this.reified);
+    this.state = 'finalized';
 
     if (!(this.hasExportsAsDep && result === undefined)) {
       this.module.exports = result;
@@ -139,29 +148,40 @@ var runningTests = false;
   };
 
   Module.prototype.unsee = function() {
-    this.finalized = false;
-    this._foundDeps = false;
-    this.isPending = false;
+    this.state = 'new';
     this.module = { exports: {} };
   };
 
   Module.prototype.reify = function() {
+    if (this.state === 'reified') { return; }
+    this.state = 'reifying';
+    try {
+      this.reified = this._reify();
+      this.state = 'reified';
+    } finally {
+      if (this.state === 'reifying') {
+        this.state = 'errored';
+      }
+    }
+  };
+
+  Module.prototype._reify = function() {
     stats.reify++;
-    var reified = this.reified;
+    var reified = this.reified.slice();
     for (var i = 0; i < reified.length; i++) {
       var mod = reified[i];
       reified[i] = mod.exports ? mod.exports : mod.module.exports();
     }
+    return reified;
   };
 
   Module.prototype.findDeps = function(pending) {
-    if (this._foundDeps) {
+    if (this.state !== 'new') {
       return;
     }
 
     stats.findDeps++;
-    this._foundDeps = true;
-    this.isPending = true;
+    this.state = 'pending';
 
     var deps = this.deps;
 
@@ -238,7 +258,7 @@ var runningTests = false;
 
     if (!mod) { missingModule(name, referrer); }
 
-    if (pending && !mod.finalized && !mod.isPending) {
+    if (pending && mod.state !== 'pending' && mod.state !== 'finalized') {
       mod.findDeps(pending);
       pending.push(mod);
       stats.pendingQueueLength++;
@@ -64227,6 +64247,967 @@ function createDeprecatedModule(moduleId) {
 createDeprecatedModule('ember/resolver');
 createDeprecatedModule('resolver');
 
+;/**
+ * @desc KylinJS.js 精简型js基本库
+ * @date 2015-8-1
+ * @author rgy19930329 in github
+ */
+(function() {
+    // 构造自己的命名空间
+    window.ky = {};
+    // KylinJS.js库信息
+    window.ky.apiInfo = {
+        apiName: 'ky',
+        apiVersion: '1.1.0'
+    };
+    window.ky.ajax = function(opts) {
+        var defaults = {
+            method: 'GET',
+            url: '',
+            data: '',
+            dataType: 'json',
+            async: true,
+            success: function() {},
+            error: function() {}
+        }
+
+        for (var key in opts) {
+            defaults[key] = opts[key];
+        }
+
+        (function() {
+            var str = '';
+            for (var key in defaults.data) {
+                str += (key + '=' + defaults.data[key] + '&');
+            }
+            defaults.data = str.slice(0);
+        })();
+
+        defaults.method = defaults.method.toUpperCase();
+        if (defaults.method === 'GET' && defaults.data) {
+            defaults.url += '?' + defaults.data;
+        }
+
+        if (defaults.method === 'GET') {
+            doGet(defaults.url);
+        } else if (defaults.method === 'POST') {
+            doPost(defaults.url, defaults.data);
+        }
+
+        // -------------------------- //
+
+        function createXmlHttp() {
+            var xmlHttp = null;
+            if (window.ActiveXObject) { //IE浏览器
+                xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+            } else if (window.XMLHttpRequest) {
+                xmlHttp = new XMLHttpRequest();
+            }
+            return xmlHttp;
+        }
+
+        function readyStateChange(xmlHttp) {
+            xmlHttp.onreadystatechange = function() {
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                    if (defaults.dataType === 'json') {
+                        try {
+                            defaults.success.call(xmlHttp, JSON.parse(xmlHttp.responseText));
+                        } catch (e) {
+                            throw new Error("数据解析错误！");
+                        }
+                    } else {
+                        defaults.success.call(xmlHttp, xmlHttp.responseText);
+                    }
+                } else {
+                    defaults.error.call(xmlHttp, xmlHttp.responseText);
+                }
+            }
+        }
+
+        function doGet(url) {
+            var xmlHttp = createXmlHttp();
+            xmlHttp.open("GET", url, true); //这里的true表示 异步传输
+            xmlHttp.send(null);
+            readyStateChange(xmlHttp);
+        }
+
+        function doPost(url, data) {
+            var xmlHttp = createXmlHttp();
+            xmlHttp.open("POST", url, true); //这里的true表示 异步传输
+            xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xmlHttp.send(data);
+            readyStateChange(xmlHttp);
+        }
+    };
+    /**
+     * base工具
+     */
+    window.ky.BaseUtil = {
+        /**
+         * @desc 判断是否是类数组
+         * @param [o] [Any]
+         * @return [boolean]
+         */
+        isArrayLike: function(o) {
+            if (o && // o is not null, undefined, etc.
+                typeof o === 'object' && // o is an object
+                isFinite(o.length) && // o.length is a finite number
+                o.length >= 0 && // o.length is non-negative
+                o.length === Math.floor(o.length) && // o.length is an integer
+                o.length < 4294967296) // o.length < 2^32
+                return true; // Then o is array-like
+            else
+                return false;
+        },
+        /**
+         * @desc 将类数组对象转化成数组
+         * @param [obj] [Any]
+         * @return [array]
+         */
+        makeArray: function(obj) {
+            if (this.isArrayLike) {
+                return Array.prototype.slice.call(obj);
+            }
+        },
+        /**
+         * @desc 转驼峰命名
+         * @param [name] [string]
+         * @return [string]
+         */
+        toCamel: function(name) {
+            return name.replace(/-[a-z]{1}/g, function(item) {
+                return item.slice(1).toUpperCase();
+            });
+        },
+        /**
+         * @desc 生成随机字符串
+         * @param [len] [number] [需要生成的字符串长度]
+         * @return [string]
+         */
+        randomString(len) {　　
+            len = len || 32;　　
+            /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
+            var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+            var maxPos = $chars.length;　　
+            var pwd = '';　　
+            for (var i = 0; i < len; i++) {　　　　
+                pwd += $chars.charAt(Math.floor(Math.random() * maxPos));　　
+            }　　
+            return pwd;
+        }
+    };
+    /**
+     * css工具
+     */
+    window.ky.CssUtil = {
+        /**
+         * @desc 设置元素css样式值
+         * @param [source, obj] [string | dom | doms, object]
+         */
+        setCss: function(source, obj) {
+            if (Object.prototype.toString.call(source) == '[object String]') {
+                var list = document.querySelectorAll(source);
+                arguments.callee(list, obj);
+            } else if (ky.BaseUtil.isArrayLike(source)) {
+                for (var i = 0, len = source.length; i < len; i++) {
+                    for (var k in obj) {
+                        source[i].style[ky.BaseUtil.toCamel(k)] = obj[k];
+                    }
+                }
+            } else {
+                for (var k in obj) {
+                    source.style[ky.BaseUtil.toCamel(k)] = obj[k];
+                }
+            }
+        },
+        /**
+         * @desc 获取元素css样式值
+         * @param [source, attr] [dom, string]
+         */
+        getCss: function(source, attr) {
+            if (source.currentStyle) {
+                return source.currentStyle[attr];
+            } else {
+                return getComputedStyle(source, false)[attr];
+            }
+        },
+        /**
+         * @desc 元素是否存在某个class
+         * @param [source, value] [dom, string]
+         * @return [boolean]
+         */
+        hasClass: function(source, value) {
+            return source.className.match(new RegExp('(\\s|^)' + value + '(\\s|$)'));
+        },
+        /**
+         * @desc 为元素添加某个class
+         * @param [source, value] [dom | doms, string]
+         */
+        addClass: function(source, value) {
+            if(source.length) {
+                this.addClassAll(source, value);
+            }else{
+                if (!this.hasClass(source, value)) {
+                    source.className += ' ' + value;
+                }
+            }
+        },
+        /**
+         * @desc 为元素移除某个class
+         * @param [source, value] [dom, string]
+         */
+        removeClass: function(source, value) {
+            if(source.length) {
+                this.removeClassAll(source, value);
+            }else{
+                if (this.hasClass(source, value)) {
+                    source.className = source.className.replace(new RegExp('(\\s|^)' + value + '(\\s|$)'), '')
+                }
+            }
+        },
+        /**
+         * @desc 为所有元素(arraylike)添加存在某个class
+         * @param [source, value] [doms, string]
+         */
+        addClassAll: function(source, value) {
+            for (var i = 0, len = source.length; i < len; i++) {
+                this.addClass(source[i], value);
+            }
+        },
+        /**
+         * @desc 为所有元素(arraylike)移除存在某个class
+         * @param [source, value] [doms, string]
+         */
+        removeClassAll: function(source, value) {
+            for (var i = 0, len = source.length; i < len; i++) {
+                this.removeClass(source[i], value);
+            }
+        }
+    };
+    /**
+     * event工具
+     */
+    window.ky.EventUtil = {
+        /**
+         * @desc 添加事件
+         * @param [element, eventType, handler] [dom | doms, string, function]
+         */
+        addEvent: function(element, eventType, handler) {
+            if(ky.BaseUtil.isArrayLike(element)) {
+                for(var i = 0; i < element.length; i++) {
+                    arguments.callee(element[i], eventType, handler);
+                }
+            }else{
+                if (element.addEventListener) { //标准浏览器
+                    element.addEventListener(eventType, handler, false);
+                } else {
+                    element.attachEvent('on' + eventType, handler);
+                }
+            }
+        },
+        /**
+         * @desc 移除事件
+         * @param [element, eventType, handler] [dom, string, function]
+         */
+        removeEvent: function(element, eventType, handler) {
+            if(ky.BaseUtil.isArrayLike(element)) {
+                for(var i = 0; i < element.length; i++) {
+                    arguments.callee(element[i], eventType, handler);
+                }
+            }else{
+                if (element.removeEventListener) { //标准浏览器
+                    element.removeEventListener(eventType, handler, false);
+                } else {
+                    element.detachEvent('on' + eventType, handler);
+                }
+            }
+        },
+        /**
+         * @desc 获取事件
+         */
+        getEvent: function(event) {
+            return event || window.event;
+        },
+        /**
+         * @desc 获取目标元素
+         */
+        getTarget: function(event) {
+            return this.getEvent(event).target || this.getEvent(event).srcElement;
+        },
+        /**
+         * @desc 阻止默认行为
+         */
+        preventDefault: function(event) {
+            var evt = this.getEvent(event);
+            if (evt.preventDefault) { //标准浏览器
+                evt.preventDefault();
+            } else {
+                evt.returnValue = false;
+            }
+        },
+        /**
+         * @desc 阻止事件冒泡
+         */
+        stopPropagation: function(event) {
+            var evt = this.getEvent(event);
+            if (evt.stopPropagation) { //标准浏览器
+                evt.stopPropagation();
+            } else {
+                evt.cancelBubble = true;
+            }
+        }
+    };
+    /**
+        animation工具
+    */
+    window.ky.AnimUtil = {
+        /**
+         * @desc 透明度
+         * @param [source, dur] [dom, number]
+         */
+        opacity: function(source, dur) {
+            var per = 0;
+            var startTime = Date.now();
+
+            requestAnimationFrame(function f() {
+                if (per >= 1) {
+                    source.style.opacity = 1; // 动画结束
+                } else {
+                    per = (Date.now() - startTime) / dur;
+
+                    source.style.opacity = per * 1;
+                    requestAnimationFrame(f);
+                }
+            });
+        },
+        //左移
+        moveLeft: function(source, dist, dur, callback) {
+            var per = 0;
+            var startTime = Date.now();
+            var currentPos = parseInt(CssUtil.getCss(source, 'left'));
+            dist = parseInt(dist);
+
+            requestAnimationFrame(function f() {
+                if (per >= 1) {
+                    source.style.left = (currentPos - dist) + "px";
+                    callback && callback();
+                } else {
+                    per = (Date.now() - startTime) / dur;
+
+                    source.style.left = (currentPos - per * dist) + "px";
+                    requestAnimationFrame(f);
+                }
+            });
+        },
+        //右移
+        moveRight: function(source, dist, dur, callback) {
+            var per = 0;
+            var startTime = Date.now();
+            var currentPos = parseInt(CssUtil.getCss(source, 'left'));
+            dist = parseInt(dist);
+
+            requestAnimationFrame(function f() {
+                if (per >= 1) {
+                    source.style.left = currentPos + dist + "px";
+                    callback && callback();
+                } else {
+                    per = (Date.now() - startTime) / dur;
+
+                    source.style.left = currentPos + per * dist + "px";
+                    requestAnimationFrame(f);
+                }
+            });
+        },
+        /**
+         * @desc 透明度
+         * @param [source, obj, opr, callback] [dom, object, object, function]
+         */
+        animate: function(source, obj, opr, callback) {
+            var opr = opr || {};
+
+            var easing = opr.easing || 'ease';
+            var dur;
+            if (opr.dur == undefined) {
+                dur = 1000;
+            } else {
+                dur = opr.dur;
+            }
+            var str = easing + " " + dur + "ms";
+
+            ky.CssUtil.setCss(source, {
+                'transition': str,
+                '-moz-transition': str,
+                '-webkit-transition': str,
+                '-o-transition': str,
+                '-ms-transition': str
+            });
+
+            ky.CssUtil.setCss(source, obj);
+
+            /*----------------*/
+
+            function getTransitionEndEvent() {
+                var ele = document.createElement('fakeelement');
+                var obj = {
+                    'transition': 'transitionend',
+                    'OTransition': 'oTransitionEnd',
+                    'MozTransition': 'transitionend',
+                    'WebkitTransition': 'webkitTransitionEnd',
+                    'MsTransition': 'msTransitionEnd'
+                }
+                for (var i in obj) {
+                    if (ele.style[i] !== undefined) {
+                        return obj[i];
+                    }
+                }
+            }
+
+            var transitionend = getTransitionEndEvent();
+
+            ky.EventUtil.addEvent(source, transitionend, callback);
+        },
+        /**
+         * @desc 创建keyframes
+         * @param [source, obj] [dom, object]
+         */
+        createKeyframes: function(source, obj) {
+            var styleDom = document.createElement('style');
+            var process = '';
+            for (var i in obj) {
+                process += (i + obj[i]);
+            }
+            var prefix = ['', '-webkit-', '-moz-', '-o-', '-ms-'];
+            var str = '';
+            for (var i = 0; i < prefix.length; i++) {
+                str += ('@' + prefix[i] + 'keyframes ' + source + '{' + process + '}');
+            }
+            styleDom.innerHTML = str;
+            document.getElementsByTagName("head")[0].appendChild(styleDom);
+        },
+        /**
+         * @desc 创建动画
+         * @param [source, animConfig, keyframesConfig] [dom, object, object]
+         */
+        createAnimation: function(source, animConfig, keyframesConfig) {
+            var animConfig = animConfig || {};
+            var dur = animConfig.dur || 1000; // 每次循环持续时间
+            var easing = animConfig.easing || 'linear'; // 缓动函数
+            var times = animConfig.times || 'infinite'; // 循环次数
+
+            var motion_name = 'motion_' + Math.random().toString().slice(2);
+            console.log(motion_name)
+            var param = motion_name + ' ' + dur + ' ' + easing + ' ' + times;
+            ky.CssUtil.setCss(source, {
+                'animation': param,
+                '-webkit-animation': param,
+                '-moz-animation': param,
+                '-o-animation': param,
+                '-ms-animation': param
+            });
+
+            this.createKeyframes(motion_name, keyframesConfig);
+        }
+    };
+    /**
+     * @desc dom选择器
+     * @param [parent, selector] [dom, string] [dom节点, 选择器]
+     * @return [array like | dom]
+     */
+    window.ky.select = function(parent, selector) {
+        var res = null;
+        if(arguments.length == 2) {
+            res = parent.querySelectorAll(selector);
+        }else if(arguments.length == 1){
+            res = document.querySelectorAll(arguments[0]);
+        }
+        return (res.length == 1) ? res[0] : res;
+    };
+    /**
+     * dom工具
+     */
+    window.ky.DomUtil = {
+        /**
+         * @desc 在元素之前插入
+         * @param [source, newNode, existNode] [dom, object, object] [父级dom, 新的dom, 已经存在的dom]
+         */
+        insertBefore: function(source, newNode, existNode) {
+            source.insertBefore(newNode, existNode);
+        },
+        /**
+         * @desc 在元素之后插入
+         * @param [source, newNode, existNode] [dom, object, object] [父级dom, 新的dom, 已经存在的dom]
+         */
+        insertAfter: function(source, newNode, existNode) {
+            source.insertBefore(newNode, existNode.nextSibling);
+        },
+        /**
+         * @desc 获取所有兄弟节点
+         * @param [source, selector] [dom, string] [父级dom, 选择器]
+         * @return [array]
+         */
+        siblings: function(source, selector) { // 返回数组
+            var parent = source.parentNode;
+            var list = parent.querySelectorAll(selector);
+            var res = [];
+            for (var i = 0, len = list.length; i < len; i++) {
+                if (list[i] !== source) {
+                    res.push(list[i]);
+                }
+            }
+            return res;
+        },
+        /**
+         * @desc 根据标签获取当前节点之后所有兄弟节点
+         * @param [source, tag] [dom, string] [dom, 标签名]
+         * @return [array]
+         */
+        findNextSilblingByTagName: function(source, tag) {
+            var obj = source;
+            while (true) {
+                obj = obj.nextSibling;
+                if (obj.nodeType == 3) {
+                    continue;
+                }
+                if (obj.tagName.toLowerCase() == tag) {
+                    break;
+                }
+            }
+            return obj;
+        },
+        /**
+         * @desc 根据标签获取当前节点之前所有兄弟节点
+         * @param [source, tag] [dom, string] [dom, 标签名]
+         * @return [array]
+         */
+        findPrevSilblingByTagName: function(source, tag) {
+            var obj = source;
+            while (true) {
+                obj = obj.previousSibling;
+                if (obj.nodeType == 3) {
+                    continue;
+                }
+                if (obj.tagName.toLowerCase() == tag) {
+                    break;
+                }
+            }
+            return obj;
+        },
+        /**
+         * @desc 获取子元素在父容器中的索引
+         * @param [parent, child] [dom, dom] [父dom, 子dom]
+         * @return [number]
+         */
+        getIndex: function(parent, child) {
+            var list = parent.childNodes;
+            list = this.makeArray(list);
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].nodeType == 3) {
+                    list.splice(i, 1);
+                }
+            }
+            for (var i = 0, len = list.length; i < len; i++) {
+                if (list[i] == child) {
+                    return i;
+                }
+            }
+        }
+    };
+
+})();
+
+;function KcodeviewJs(bar){
+
+	var param = {};
+
+	var operators = ['\\+=', '-=', '\\*=', '\\/=', '&lt;=', '&gt;=', '&lt;', '&gt;', '=', '\\+', '-', '\\*', '\\/', '%'];
+	var specialkeywords = ['class'];
+
+	var colors = {
+		color1: ['var ', 'let ', 'for', 'if', 'else', 'return ', 'function', 'this', ' in ', 'switch', 'new '],
+		//color2: ['push', 'shift', 'pop', 'unshift', 'join', 'concat', 'match', 'replace', 'apply', 'call'],
+		color3: ['console', 'RegExp', 'Date', 'Array', 'Object'],
+		color4: ['prototype', 'arguments', 'length'],
+		color5: ['window', 'location', 'history', 'setTimeout', 'setInterval', 'document', 'true', 'false']
+	};
+	/**
+	* @desc 初始化元素
+	*/
+	var initEle = function() {
+		param.code = ky.select(bar, 'code');
+	};
+	/**
+	* @desc 初始化参数配置
+	*/
+	var initConfig = function(obj) {
+		ky.CssUtil.setCss(param.code, {
+			'font-family': 'consolas' // 默认字体
+		});
+		ky.CssUtil.setCss(param.code, obj);
+	};
+	/**
+	* @desc 开始着色
+	*/
+	var bepaint = function() {
+		// 开始着色
+		var res = param.code.innerHTML;
+
+		var reg_base_obj = {
+			note: '(\\/{2,}.*?(\\r|\\n))|(\\/\\*(\\n|.)*?\\*\\/)', // 匹配注释
+			string: '("([^\\\"]*(\\.)?)*")|(\'([^\\\']*(\\.)?)*\')', // 匹配字符串
+			number: '(([^\\w])([0-9]+)([^\\w]))', // 匹配数字
+			operators: '(' + operators.join('|') + ')', // 匹配操作符
+			specialkeywords: '(' + specialkeywords.join('|') + ')', // 匹配特殊关键字
+			method: '([\\r\\n\\(\\s{}\\.;]+)([a-zA-Z_]\\w*\s*\\([a-zA-Z_]*\\w*\\))([\\.\\)\\s{}\\n\\r;]+)', // 匹配函数及其参数
+		};
+
+		var reg_keywords_obj = {
+			keywords1: '(' + colors.color1.join('|') + ')', // 匹配1类关键字
+			// keywords2: '(' + colors.color2.join('|') + ')', // 匹配2类关键字
+			keywords3: '(' + colors.color3.join('|') + ')', // 匹配3类关键字
+			keywords4: '(' + colors.color4.join('|') + ')', // 匹配4类关键字
+			keywords5: '(' + colors.color5.join('|') + ')', // 匹配5类关键字
+		};
+
+		var reg_base = '';
+		for(var key in reg_base_obj) {
+			reg_base += ('|' + reg_base_obj[key]);
+		}
+		reg_base = reg_base.slice(1);
+
+		var reg_keywords = '';
+		for(var key in reg_keywords_obj) {
+			reg_keywords += ('|' + reg_keywords_obj[key]);
+		}
+		reg_keywords = reg_keywords.slice(1);
+
+		/*--------------------------*/
+
+		res = res.replace(new RegExp(reg_base, 'g'), function(tar) {
+			if(tar.match(new RegExp(reg_base_obj.note))) {
+				return '<span class="color0">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.string))) {
+				return '<span class="color4">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.number))) {
+				var tmp = tar.match(new RegExp(reg_base_obj.number));
+				return tmp[2] + '<span class="color11">' + tmp[3] + '</span>' + tmp[4];
+			}else if(tar.match(new RegExp(reg_base_obj.operators))) {
+				return '<span class="color2">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.specialkeywords))) {
+				return '<span class="color1">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.method))) {
+				var arr = tar.match(new RegExp(reg_base_obj.method));
+				var tmp = tar.match(/([a-zA-Z_]\w*)\s*\(([a-zA-Z_]*\w*)\)/);
+				return arr[1] + '<span class="color12">' + tmp[1] + '</span>(<span class="color4">' + tmp[2] + '</span>)' + arr[3];
+			}
+			return tar;
+		});
+
+		res = res.replace(new RegExp(reg_keywords, 'g'), function(tar) {
+			if(tar.match(new RegExp(reg_keywords_obj.keywords1))) {
+				return '<span class="color1">' + tar + '</span>';
+			}
+			// else if(tar.match(new RegExp(reg_keywords_obj.keywords2))) {
+			// 	return '<span class="color2">' + tar + '</span>';
+			// }
+			else if(tar.match(new RegExp(reg_keywords_obj.keywords3))) {
+				return '<span class="color3">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_keywords_obj.keywords4))) {
+				return '<span class="color4">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_keywords_obj.keywords5))) {
+				return '<span class="color5">' + tar + '</span>';
+			}
+			return tar;
+		});
+		return res;
+	};
+	/**
+	* @desc 添加行数标志
+	*/
+	var addRowTag = function(res) {
+		var num = 0;
+		res = res.replace(/\r|\n/g, function(tar) {
+			num++;
+			return tar + '<span class="color10 ky-tab-span">' + num + '</span>';
+		});
+		param.code.innerHTML = res;
+		// 重置行标的宽度
+		var span_width = (num + '').length;
+		ky.CssUtil.setCss(ky.select(bar, '.ky-tab-span'), {
+			'width': span_width + 'em',
+		});
+	};
+	/**
+	* @desc 项目初始化
+	*/
+	var init = function(obj) {
+		initEle();// 初始化元素
+		initConfig(obj);// 初始化参数配置
+		var res = bepaint();// 开始着色
+		addRowTag(res);// 增加行数标识
+	};
+	/**
+	* @desc 获取代码
+	*/
+	var getCode = function() {
+		var output = param.code.innerText;
+		output = output.replace(/(\r|\n)[0-9]+/g, function(tar) {
+			return tar.match(/\r|\n/)[0];
+		});
+		return output;
+	};
+
+	return {
+		init: init,
+		getCode: getCode
+	}
+}
+
+;function KcodeviewCss(bar){
+
+	var param = {};
+
+	var colors = {
+		color1: ['@import'],
+		color2: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+	};
+	/**
+	* @desc 初始化元素
+	*/
+	var initEle = function() {
+		param.code = ky.select(bar, 'code');
+	};
+	/**
+	* @desc 初始化参数配置
+	*/
+	var initConfig = function(obj) {
+		ky.CssUtil.setCss(param.code, {
+			'font-family': 'consolas' // 默认字体
+		});
+		ky.CssUtil.setCss(param.code, obj);
+	};
+	/**
+	* @desc 开始着色
+	*/
+	var bepaint = function() {
+		// 开始着色
+		var res = param.code.innerHTML;
+
+		var reg_base_obj = {
+			note: '(\\/{2,}.*?(\\r|\\n))|(\\/\\*(\\n|.)*?\\*\\/)', // 匹配注释
+			string: '("([^\\\"]*(\\.)?)*")|(\'([^\\\']*(\\.)?)*\')', // 匹配字符串
+			number: '(([^\\w])([0-9]+)([^\\w]))', // 匹配数字
+			method: '([\\r\\n\\(\\s{}\\.;]+)([a-zA-Z_]\\w*\s*\\([a-zA-Z_]*\\w*\\))([\\.\\)\\s{}\\n\\r;]+)', // 匹配函数及其参数
+			prop: '\\b([\\w-]+):', // 匹配css属性
+			tag: '\\b([\\w-]+)\\s*{', // 匹配css的标签选择器
+			class: '(\\.[\\w-]+)\\b', // 匹配css的class选择器
+			id: '(#[\\w-]+)\\b', // 匹配css的id选择器
+		};
+
+		var reg_keywords_obj = {
+			keywords1: '(' + colors.color1.join('|') + ')', // 匹配1类关键字
+			keywords2: '(' + colors.color2.join('|') + ')', // 匹配3类关键字
+		};
+
+		var reg_base = '';
+		for(var key in reg_base_obj) {
+			reg_base += ('|' + reg_base_obj[key]);
+		}
+		reg_base = reg_base.slice(1);
+
+		var reg_keywords = '';
+		for(var key in reg_keywords_obj) {
+			reg_keywords += ('|' + reg_keywords_obj[key]);
+		}
+		reg_keywords = reg_keywords.slice(1);
+
+		/*--------------------------*/
+
+		res = res.replace(new RegExp(reg_base, 'g'), function(tar) {
+			if(tar.match(new RegExp(reg_base_obj.note))) {
+				return '<span class="color0">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.string))) {
+				return '<span class="color4">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.number))) {
+				var tmp = tar.match(new RegExp(reg_base_obj.number));
+				return tmp[2] + '<span class="color11">' + tmp[3] + '</span>' + tmp[4];
+			}else if(tar.match(new RegExp(reg_base_obj.method))) {
+				var arr = tar.match(new RegExp(reg_base_obj.method));
+				var tmp = tar.match(/([a-zA-Z_]\w*)\s*\(([a-zA-Z_]*\w*)\)/);
+				return arr[1] + '<span class="color12">' + tmp[1] + '</span>(<span class="color4">' + tmp[2] + '</span>)' + arr[3];
+			}else if(tar.match(new RegExp(reg_base_obj.prop))) {
+				return '<span class="color5">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.class))) {
+				return '<span class="color2">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.id))) {
+				return '<span class="color2">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_base_obj.tag))) {
+				var arr = tar.match(new RegExp(reg_base_obj.tag));
+				return '<span class="color2">' + arr[1] + '</span>' + ' {';
+			}
+			return tar;
+		});
+
+		res = res.replace(new RegExp(reg_keywords, 'g'), function(tar) {
+			if(tar.match(new RegExp(reg_keywords_obj.keywords1))) {
+				return '<span class="color1">' + tar + '</span>';
+			}else if(tar.match(new RegExp(reg_keywords_obj.keywords2))) {
+				return '<span class="color2">' + tar + '</span>';
+			}
+			return tar;
+		});
+		return res;
+	};
+	/**
+	* @desc 添加行数标志
+	*/
+	var addRowTag = function(res) {
+		var num = 0;
+		res = res.replace(/\r|\n/g, function(tar) {
+			num++;
+			return tar + '<span class="color10 ky-tab-span">' + num + '</span>';
+		});
+		param.code.innerHTML = res;
+		// 重置行标的宽度
+		var span_width = (num + '').length;
+		ky.CssUtil.setCss(ky.select(bar, '.ky-tab-span'), {
+			'width': span_width + 'em',
+		});
+	};
+	/**
+	* @desc 项目初始化
+	*/
+	var init = function(obj) {
+		initEle();// 初始化元素
+		initConfig(obj);// 初始化参数配置
+		var res = bepaint();// 开始着色
+		addRowTag(res);// 增加行数标识
+	};
+	/**
+	* @desc 获取代码
+	*/
+	var getCode = function() {
+		var output = param.code.innerText;
+		output = output.replace(/(\r|\n)[0-9]+/g, function(tar) {
+			return tar.match(/\r|\n/)[0];
+		});
+		return output;
+	};
+
+	return {
+		init: init,
+		getCode: getCode
+	}
+}
+
+;function KcodeviewHtml(bar){
+
+	var param = {};
+	/**
+	* @desc 初始化元素
+	*/
+	var initEle = function() {
+		param.code = ky.select(bar, 'code');
+	};
+	/**
+	* @desc 初始化参数配置
+	*/
+	var initConfig = function(obj) {
+		ky.CssUtil.setCss(param.code, {
+			'font-family': 'consolas' // 默认字体
+		});
+		ky.CssUtil.setCss(param.code, obj);
+	};
+	/**
+	* @desc 添加行数标志
+	*/
+	var addRowTag = function(res) {
+		var num = 0;
+		res = res.replace(/\r|\n/g, function(tar) {
+			num++;
+			return tar + '<span class="color10 ky-tab-span">' + num + '</span>';
+		});
+		param.code.innerHTML = res;
+
+		// 重置行标的宽度
+		var span_width = (num + '').length;
+		ky.CssUtil.setCss(ky.select('.ky-tab-span'), {
+			'width': span_width + 'em',
+		});
+	};
+	/**
+	* @desc 编码转换
+	* @param [str] [string]
+	* @return [string]
+	*/
+	var convert = function(str) {
+		return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	};
+	/**
+	* @desc 开始着色
+	*/
+	var bepaint = function() {
+		var res = param.code.innerHTML;
+
+		res = res.replace(/<\/*[^>]+>/g, function(tar) {
+			// 匹配注释标签
+			if(tar.match(/<!--(\n|.)*?-->/)) {
+				tar = convert(tar);
+				return '<span class="color0">' + tar + '</span>';
+			}
+			// 匹配其它标签
+			var tmp = tar.match(/(<\/*)([^>]+)>/);
+			var tagEnd = tmp[2].indexOf(' ');
+			if(tagEnd > 0) {
+				var tag = tmp[2].slice(0, tagEnd);
+				var arr = tmp[2].slice(tagEnd).match(/[\w-]+=\"[^=]*\"/g);
+			}else{
+				var tag = tmp[2];
+			}
+
+			var attrs = '';
+			var attr = '';
+			if(arr) {
+				while(attr = arr.shift()) {
+					var tarr = attr.split('=');
+					var key = tarr[0],
+						value = tarr[1];
+					if(key == 'id') {
+						attrs += ' <span class="color12">' + key + '</span>=' + '<span class="color4">' + value + '</span>';
+					}else{
+						attrs += ' <span class="color2">' + key + '</span>=' + '<span class="color4">' + value + '</span>';
+					}
+				}
+			}
+			return convert(tmp[1]) + '<span class="color1">' + tag + '</span>' + attrs + convert('>');
+		});
+		return res;
+	};
+	/**
+	* @desc 项目初始化
+	*/
+	var init = function(obj) {
+		initEle();// 初始化元素
+		initConfig(obj);// 初始化参数配置
+		var res = bepaint();// 开始着色
+		addRowTag(res);// 增加行数标识
+	};
+	/**
+	* @desc 获取代码
+	*/
+	var getCode = function() {
+		var output = param.code.innerText;
+		output = output.replace(/(\r|\n)[0-9]+/g, function(tar) {
+			return tar.match(/\r|\n/)[0];
+		});
+		return output;
+	};
+
+	return {
+		init: init,
+		getCode: getCode
+	}
+}
+
 ;define('ember-ajax/ajax-request', ['exports', 'ember', 'ember-ajax/mixins/ajax-request'], function (exports, _ember, _emberAjaxMixinsAjaxRequest) {
   'use strict';
 
@@ -66207,102 +67188,218 @@ define('ember-data/-private/adapters/build-url-mixin', ['exports', 'ember'], fun
     },
 
     /**
-     * @method urlForFindRecord
-     * @param {String} id
-     * @param {String} modelName
-     * @param {DS.Snapshot} snapshot
-     * @return {String} url
-     */
+     Builds a URL for a `store.findRecord(type, id)` call.
+      Example:
+      ```app/adapters/user.js
+     import DS from 'ember-data';
+      export default DS.JSONAPIAdapter.extend({
+       urlForFindRecord(id, modelName, snapshot) {
+         let baseUrl = this.buildURL();
+         return `${baseUrl}/users/${snapshot.adapterOptions.user_id}/playlists/${id}`;
+       }
+     });
+     ```
+      @method urlForFindRecord
+     @param {String} id
+     @param {String} modelName
+     @param {DS.Snapshot} snapshot
+     @return {String} url
+      */
     urlForFindRecord: function urlForFindRecord(id, modelName, snapshot) {
       return this._buildURL(modelName, id);
     },
 
     /**
-     * @method urlForFindAll
-     * @param {String} modelName
-     * @param {DS.SnapshotRecordArray} snapshot
-     * @return {String} url
+     Builds a URL for a `store.findAll(type)` call.
+      Example:
+      ```app/adapters/comment.js
+     import DS from 'ember-data';
+      export default DS.JSONAPIAdapter.extend({
+       urlForFindAll(id, modelName, snapshot) {
+         return 'data/comments.json';
+       }
+     });
+     ```
+      @method urlForFindAll
+     @param {String} modelName
+     @param {DS.SnapshotRecordArray} snapshot
+     @return {String} url
      */
     urlForFindAll: function urlForFindAll(modelName, snapshot) {
       return this._buildURL(modelName);
     },
 
     /**
-     * @method urlForQuery
-     * @param {Object} query
-     * @param {String} modelName
-     * @return {String} url
+     Builds a URL for a `store.query(type, query)` call.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.RESTAdapter.extend({
+       host: 'https://api.github.com',
+       urlForQuery (query, modelName) {
+         switch(modelName) {
+           case 'repo':
+             return `https://api.github.com/orgs/${query.orgId}/repos`;
+           default:
+             return this._super(...arguments);
+         }
+       }
+     });
+     ```
+      @method urlForQuery
+     @param {Object} query
+     @param {String} modelName
+     @return {String} url
      */
     urlForQuery: function urlForQuery(query, modelName) {
       return this._buildURL(modelName);
     },
 
     /**
-     * @method urlForQueryRecord
-     * @param {Object} query
-     * @param {String} modelName
-     * @return {String} url
+     Builds a URL for a `store.queryRecord(type, query)` call.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.RESTAdapter.extend({
+       urlForQueryRecord({ slug }, modelName) {
+         let baseUrl = this.buildURL();
+         return `${baseUrl}/${encodeURIComponent(slug)}`;
+       }
+     });
+     ```
+      @method urlForQueryRecord
+     @param {Object} query
+     @param {String} modelName
+     @return {String} url
      */
     urlForQueryRecord: function urlForQueryRecord(query, modelName) {
       return this._buildURL(modelName);
     },
 
     /**
-     * @method urlForFindMany
-     * @param {Array} ids
-     * @param {String} modelName
-     * @param {Array} snapshots
-     * @return {String} url
+     Builds a URL for coalesceing multiple `store.findRecord(type, id)
+     records into 1 request when the adapter's `coalesceFindRequests`
+     property is true.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.RESTAdapter.extend({
+       urlForFindMany(ids, modelName) {
+         let baseUrl = this.buildURL();
+         return `${baseUrl}/coalesce`;
+       }
+     });
+     ```
+      @method urlForFindMany
+     @param {Array} ids
+     @param {String} modelName
+     @param {Array} snapshots
+     @return {String} url
      */
     urlForFindMany: function urlForFindMany(ids, modelName, snapshots) {
       return this._buildURL(modelName);
     },
 
     /**
-     * @method urlForFindHasMany
-     * @param {String} id
-     * @param {String} modelName
-     * @param {DS.Snapshot} snapshot
-     * @return {String} url
+     Builds a URL for fetching a async hasMany relationship when a url
+     is not provided by the server.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.JSONAPIAdapter.extend({
+       urlForFindHasMany(id, modelName, snapshot) {
+         let baseUrl = this.buildURL(id, modelName);
+         return `${baseUrl}/relationships`;
+       }
+     });
+     ```
+      @method urlForFindHasMany
+     @param {String} id
+     @param {String} modelName
+     @param {DS.Snapshot} snapshot
+     @return {String} url
      */
     urlForFindHasMany: function urlForFindHasMany(id, modelName, snapshot) {
       return this._buildURL(modelName, id);
     },
 
     /**
-     * @method urlForFindBelongsTo
-     * @param {String} id
-     * @param {String} modelName
-     * @param {DS.Snapshot} snapshot
-     * @return {String} url
+     Builds a URL for fetching a async belongsTo relationship when a url
+     is not provided by the server.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.JSONAPIAdapter.extend({
+       urlForFindBelongsTo(id, modelName, snapshot) {
+         let baseUrl = this.buildURL(id, modelName);
+         return `${baseUrl}/relationships`;
+       }
+     });
+     ```
+      @method urlForFindBelongsTo
+     @param {String} id
+     @param {String} modelName
+     @param {DS.Snapshot} snapshot
+     @return {String} url
      */
     urlForFindBelongsTo: function urlForFindBelongsTo(id, modelName, snapshot) {
       return this._buildURL(modelName, id);
     },
 
     /**
-     * @method urlForCreateRecord
-     * @param {String} modelName
-     * @param {DS.Snapshot} snapshot
-     * @return {String} url
+     Builds a URL for a `record.save()` call when the record was created
+     locally using `store.createRecord()`.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.RESTAdapter.extend({
+       urlForCreateRecord(modelName, snapshot) {
+         return this._super(...arguments) + '/new';
+       }
+     });
+     ```
+      @method urlForCreateRecord
+     @param {String} modelName
+     @param {DS.Snapshot} snapshot
+     @return {String} url
      */
     urlForCreateRecord: function urlForCreateRecord(modelName, snapshot) {
       return this._buildURL(modelName);
     },
 
     /**
-     * @method urlForUpdateRecord
-     * @param {String} id
-     * @param {String} modelName
-     * @param {DS.Snapshot} snapshot
-     * @return {String} url
+     Builds a URL for a `record.save()` call when the record has been update locally.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.RESTAdapter.extend({
+       urlForUpdateRecord(id, modelName, snapshot) {
+         return `/${id}/feed?access_token=${snapshot.adapterOptions.token}`;
+       }
+     });
+     ```
+      @method urlForUpdateRecord
+     @param {String} id
+     @param {String} modelName
+     @param {DS.Snapshot} snapshot
+     @return {String} url
      */
     urlForUpdateRecord: function urlForUpdateRecord(id, modelName, snapshot) {
       return this._buildURL(modelName, id);
     },
 
     /**
-     * @method urlForDeleteRecord
+     Builds a URL for a `record.save()` call when the record has been deleted locally.
+      Example:
+      ```app/adapters/application.js
+     import DS from 'ember-data';
+      export default DS.RESTAdapter.extend({
+       urlForDeleteRecord(id, modelName, snapshot) {
+         return this._super(...arguments) + '/destroy';
+       }
+     });
+     ```
+      * @method urlForDeleteRecord
      * @param {String} id
      * @param {String} modelName
      * @param {DS.Snapshot} snapshot
@@ -66417,6 +67514,7 @@ define('ember-data/-private/debug', ['exports', 'ember'], function (exports, _em
   exports.deprecate = deprecate;
   exports.info = info;
   exports.runInDebug = runInDebug;
+  exports.instrument = instrument;
   exports.warn = warn;
   exports.debugSeal = debugSeal;
   exports.assertPolymorphicType = assertPolymorphicType;
@@ -66439,6 +67537,10 @@ define('ember-data/-private/debug', ['exports', 'ember'], function (exports, _em
 
   function runInDebug() {
     return _ember['default'].runInDebug.apply(_ember['default'], arguments);
+  }
+
+  function instrument(method) {
+    return method();
   }
 
   function warn() {
@@ -67919,32 +69021,6 @@ define('ember-data/-private/system/model/errors', ['exports', 'ember', 'ember-da
 define("ember-data/-private/system/model/internal-model", ["exports", "ember", "ember-data/-private/debug", "ember-data/-private/system/model/states", "ember-data/-private/system/relationships/state/create", "ember-data/-private/system/snapshot", "ember-data/-private/system/empty-object", "ember-data/-private/features", "ember-data/-private/utils", "ember-data/-private/system/references"], function (exports, _ember, _emberDataPrivateDebug, _emberDataPrivateSystemModelStates, _emberDataPrivateSystemRelationshipsStateCreate, _emberDataPrivateSystemSnapshot, _emberDataPrivateSystemEmptyObject, _emberDataPrivateFeatures, _emberDataPrivateUtils, _emberDataPrivateSystemReferences) {
   "use strict";
 
-  var _slicedToArray = (function () {
-    function sliceIterator(arr, i) {
-      var _arr = [];var _n = true;var _d = false;var _e = undefined;try {
-        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-          _arr.push(_s.value);if (i && _arr.length === i) break;
-        }
-      } catch (err) {
-        _d = true;_e = err;
-      } finally {
-        try {
-          if (!_n && _i["return"]) _i["return"]();
-        } finally {
-          if (_d) throw _e;
-        }
-      }return _arr;
-    }return function (arr, i) {
-      if (Array.isArray(arr)) {
-        return arr;
-      } else if (Symbol.iterator in Object(arr)) {
-        return sliceIterator(arr, i);
-      } else {
-        throw new TypeError("Invalid attempt to destructure non-iterable instance");
-      }
-    };
-  })();
-
   exports["default"] = InternalModel;
 
   var Promise = _ember["default"].RSVP.Promise;
@@ -67969,6 +69045,9 @@ define("ember-data/-private/system/model/internal-model", ["exports", "ember", "
       return get(this.currentState, key);
     };
   }
+
+  // this (and all heimdall instrumentation) will be stripped by a babel transform
+  //  https://github.com/heimdalljs/babel5-plugin-strip-heimdall
 
   /*
     `InternalModel` is the Model class that we use internally inside Ember Data to represent models.
@@ -68147,14 +69226,14 @@ define("ember-data/-private/system/model/internal-model", ["exports", "ember", "
       if (this.record) {
         this.record._notifyProperties(changedKeys);
       }
-      this.didInitalizeData();
+      this.didInitializeData();
     },
 
     becameReady: function becameReady() {
       _ember["default"].run.schedule('actions', this.store.recordArrayManager, this.store.recordArrayManager.recordWasLoaded, this);
     },
 
-    didInitalizeData: function didInitalizeData() {
+    didInitializeData: function didInitializeData() {
       if (!this.dataHasInitialized) {
         this.becameReady();
         this.dataHasInitialized = true;
@@ -68190,7 +69269,7 @@ define("ember-data/-private/system/model/internal-model", ["exports", "ember", "
     */
     loadedData: function loadedData() {
       this.send('loadedData');
-      this.didInitalizeData();
+      this.didInitializeData();
     },
 
     /*
@@ -68232,11 +69311,9 @@ define("ember-data/-private/system/model/internal-model", ["exports", "ember", "
 
       for (var i = 0, _length = changedAttributeNames.length; i < _length; i++) {
         var attribute = changedAttributeNames[i];
-
-        var _changedAttributes$attribute = _slicedToArray(changedAttributes[attribute], 2);
-
-        var oldData = _changedAttributes$attribute[0];
-        var newData = _changedAttributes$attribute[1];
+        var data = changedAttributes[attribute];
+        var oldData = data[0];
+        var newData = data[1];
 
         if (oldData === newData) {
           delete this._attributes[attribute];
@@ -71083,6 +72160,33 @@ define("ember-data/-private/system/record-arrays/adapter-populated-record-array"
     may trigger a search on the server, whose results would be loaded
     into an instance of the `AdapterPopulatedRecordArray`.
   
+    ---
+  
+    If you want to update the array and get the latest records from the
+    adapter, you can invoke [`update()`](#method_update):
+  
+    Example
+  
+    ```javascript
+    // GET /users?isAdmin=true
+    var admins = store.query('user', { isAdmin: true });
+  
+    admins.then(function() {
+      console.log(admins.get("length")); // 42
+    });
+  
+    // somewhere later in the app code, when new admins have been created
+    // in the meantime
+    //
+    // GET /users?isAdmin=true
+    admins.update().then(function() {
+      admins.get('isUpdating'); // false
+      console.log(admins.get("length")); // 123
+    });
+  
+    admins.get('isUpdating'); // true
+    ```
+  
     @class AdapterPopulatedRecordArray
     @namespace DS
     @extends DS.RecordArray
@@ -71271,6 +72375,11 @@ define("ember-data/-private/system/record-arrays/record-array", ["exports", "emb
       @type DS.Store
     */
     store: null,
+
+    replace: function replace() {
+      var type = get(this, 'type').toString();
+      throw new Error("The result of a server query (for all " + type + " types) is immutable. To modify contents, use toArray()");
+    },
 
     /**
       Retrieves an object from the content by index.
@@ -73121,6 +74230,8 @@ define("ember-data/-private/system/relationships/state/relationship", ["exports"
 
   exports["default"] = Relationship;
 
+  /* global heimdall */
+
   function Relationship(store, record, inverseKey, relationshipMeta) {
     var async = relationshipMeta.options.async;
     this.members = new _emberDataPrivateSystemOrderedSet["default"]();
@@ -73805,15 +74916,16 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
     return (0, _emberDataPrivateSystemPromiseProxies.promiseObject)(toReturn, label);
   }
 
-  var get = _ember['default'].get;
-  var set = _ember['default'].set;
   var once = _ember['default'].run.once;
-  var isNone = _ember['default'].isNone;
-  var isPresent = _ember['default'].isPresent;
   var Promise = _ember['default'].RSVP.Promise;
-  var copy = _ember['default'].copy;
   var Store;
 
+  var copy = _ember['default'].copy;
+  var get = _ember['default'].get;
+  var GUID_KEY = _ember['default'].GUID_KEY;
+  var isNone = _ember['default'].isNone;
+  var isPresent = _ember['default'].isPresent;
+  var set = _ember['default'].set;
   var Service = _ember['default'].Service;
 
   // Implementors Note:
@@ -74712,7 +75824,8 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
       Processing by Api::V1::PersonsController#index as HTML
       Parameters: { "ids" => ["1", "2", "3"] }
       ```
-       This method returns a promise, which is resolved with a `RecordArray`
+       This method returns a promise, which is resolved with an
+      [`AdapterPopulatedRecordArray`](http://emberjs.com/api/data/classes/DS.AdapterPopulatedRecordArray.html)
       once the server returns.
        @since 1.13.0
       @method query
@@ -74736,7 +75849,9 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
       (0, _emberDataPrivateDebug.assert)("You tried to load a query but you have no adapter (for " + typeClass + ")", adapter);
       (0, _emberDataPrivateDebug.assert)("You tried to load a query but your adapter does not implement `query`", typeof adapter.query === 'function');
 
-      return (0, _emberDataPrivateSystemPromiseProxies.promiseArray)((0, _emberDataPrivateSystemStoreFinders._query)(adapter, this, typeClass, query, array));
+      var pA = (0, _emberDataPrivateSystemPromiseProxies.promiseArray)((0, _emberDataPrivateSystemStoreFinders._query)(adapter, this, typeClass, query, array));
+
+      return pA;
     },
 
     /**
@@ -74952,9 +76067,12 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
     findAll: function findAll(modelName, options) {
       (0, _emberDataPrivateDebug.assert)("You need to pass a model name to the store's findAll method", isPresent(modelName));
       (0, _emberDataPrivateDebug.assert)('Passing classes to store methods has been removed. Please pass a dasherized string instead of ' + _ember['default'].inspect(modelName), typeof modelName === 'string');
+
       var typeClass = this.modelFor(modelName);
 
-      return this._fetchAll(typeClass, this.peekAll(modelName), options);
+      var fetch = this._fetchAll(typeClass, this.peekAll(modelName), options);
+
+      return fetch;
     },
 
     /**
@@ -75271,6 +76389,8 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
         // normalize relationship IDs into records
         this._backburner.schedule('normalizeRelationships', this, '_setupRelationships', internalModel, data);
         this.updateId(internalModel, data);
+      } else {
+        (0, _emberDataPrivateDebug.assert)('Your ' + internalModel.type.modelName + ' record was saved to the server, but the response does not have an id and no id has been set client side. Records must have ids. Please update the server response to provide an id in the response or generate the id on the client side either before saving the record or while normalizing the response.', internalModel.id);
       }
 
       //We first make sure the primary data has been updated
@@ -75317,7 +76437,18 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
       var oldId = internalModel.id;
       var id = (0, _emberDataPrivateSystemCoerceId['default'])(data.id);
 
-      (0, _emberDataPrivateDebug.assert)("An adapter cannot assign a new id to a record that already has an id. " + internalModel + " had id: " + oldId + " and you tried to update it with " + id + ". This likely happened because your server returned data in response to a find or update that had a different id than the one you sent.", oldId === null || id === oldId);
+      // ID absolutely can't be missing if the oldID is empty (missing Id in response for a new record)
+      (0, _emberDataPrivateDebug.assert)('\'' + internalModel.type.modelName + ':' + internalModel[GUID_KEY] + '\' was saved to the server, but the response does not have an id and your record does not either.', !(id === null && oldId === null));
+
+      // ID absolutely can't be different than oldID if oldID is not null
+      (0, _emberDataPrivateDebug.assert)('\'' + internalModel.type.modelName + ':' + oldId + '\' was saved to the server, but the response returned the new id \'' + id + '\'. The store cannot assign a new id to a record that already has an id.', !(oldId !== null && id !== oldId));
+
+      // ID can be null if oldID is not null (altered ID in response for a record)
+      // however, this is more than likely a developer error.
+      if (oldId !== null && id === null) {
+        (0, _emberDataPrivateDebug.warn)('Your ' + internalModel.type.modelName + ' record was saved to the server, but the response does not have an id.', !(oldId !== null && id === null));
+        return;
+      }
 
       this.typeMapFor(internalModel.type).idToRecord[id] = internalModel;
 
@@ -75591,6 +76722,7 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
         for (i = 0; i < length; i++) {
           internalModels[i] = this._pushInternalModel(data.data[i]).getRecord();
         }
+
         return internalModels;
       }
 
@@ -75602,7 +76734,9 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
 
       var internalModel = this._pushInternalModel(data.data);
 
-      return internalModel.getRecord();
+      var record = internalModel.getRecord();
+
+      return record;
     },
 
     _hasModelFor: function _hasModelFor(type) {
@@ -76084,6 +77218,8 @@ define('ember-data/-private/system/store/container-instance-cache', ['exports', 
 
   exports['default'] = ContainerInstanceCache;
 
+  /* global heimdall */
+
   var assign = _ember['default'].assign || _ember['default'].merge;
 
   /*
@@ -76344,6 +77480,7 @@ define("ember-data/-private/system/store/finders", ["exports", "ember", "ember-d
 
       (0, _emberDataPrivateDebug.assert)('The response to store.query is expected to be an array but it was a single record. Please wrap your response in an array or use `store.queryRecord` to query for a single record.', Array.isArray(records));
       recordArray.loadRecords(records, payload);
+
       return recordArray;
     }, null, "DS: Extract payload of query " + typeClass);
   }
@@ -77616,6 +78753,7 @@ define('ember-data/adapters/errors', ['exports', 'ember', 'ember-data/-private/d
   }
 });
 define('ember-data/adapters/json-api', ['exports', 'ember', 'ember-data/adapters/rest', 'ember-data/-private/features', 'ember-data/-private/debug'], function (exports, _ember, _emberDataAdaptersRest, _emberDataPrivateFeatures, _emberDataPrivateDebug) {
+  /* global heimdall */
   /**
     @module ember-data
   */
@@ -77830,6 +78968,7 @@ define('ember-data/adapters/json-api', ['exports', 'ember', 'ember-data/adapters
   exports['default'] = JSONAPIAdapter;
 });
 define('ember-data/adapters/rest', ['exports', 'ember', 'ember-data/adapter', 'ember-data/adapters/errors', 'ember-data/-private/adapters/build-url-mixin', 'ember-data/-private/features', 'ember-data/-private/debug', 'ember-data/-private/utils/parse-response-headers'], function (exports, _ember, _emberDataAdapter, _emberDataAdaptersErrors, _emberDataPrivateAdaptersBuildUrlMixin, _emberDataPrivateFeatures, _emberDataPrivateDebug, _emberDataPrivateUtilsParseResponseHeaders) {
+  /* global heimdall */
   /**
     @module ember-data
   */
@@ -83342,7 +84481,7 @@ define('ember-data/transform', ['exports', 'ember'], function (exports, _ember) 
 define("ember-data/version", ["exports"], function (exports) {
   "use strict";
 
-  exports["default"] = "2.9.0";
+  exports["default"] = "2.10.0";
 });
 define("ember-inflector/index", ["exports", "ember", "ember-inflector/lib/system", "ember-inflector/lib/ext/string"], function (exports, _ember, _emberInflectorLibSystem, _emberInflectorLibExtString) {
   /* global define, module */
@@ -83843,203 +84982,55 @@ define('ember-load-initializers/index', ['exports', 'ember'], function (exports,
     });
   };
 });
-define('ember-my-radios/components/my-radios/component', ['exports', 'ember', 'ember-my-radios/components/my-radios/template'], function (exports, _ember, _emberMyRadiosComponentsMyRadiosTemplate) {
-	'use strict';
+define('ember-my-radios/components/code-view/component', ['exports', 'ember', 'ember-my-radios/components/code-view/template'], function (exports, _ember, _emberMyRadiosComponentsCodeViewTemplate) {
+  'use strict';
 
-	exports['default'] = _ember['default'].Component.extend({
-		layout: _emberMyRadiosComponentsMyRadiosTemplate['default'],
-		tagName: 'div',
-		classNames: ['my-radios'],
-		content: [],
-		inputName: '',
-		optionValuePath: '',
-		optionLabelPath: '',
-		value: '',
-		name: '',
+  exports['default'] = _ember['default'].Component.extend({
+    layout: _emberMyRadiosComponentsCodeViewTemplate['default'],
+    tagName: 'div',
+    classNames: ['code-view'],
+    id: 'kcodeview',
+    lang: 'js', // 哪种语言(js, css, html)
 
-		init: function init() {
-			this._super.apply(this, arguments);
-			var str = this.randomString(5);
-			if (!this.get('inputName')) {
-				this.set('inputName', str);
-			}
-		},
+    init: function init() {
+      this._super.apply(this, arguments);
+      var str = this.randomString(5);
+      var newId = this.get('id') + str;
+      this.set('id', newId);
+    },
 
-		actions: {
-			select: function select(index) {
-				var value = this.get('content')[index][this.get('optionValuePath')],
-				    name = this.get('content')[index][this.get('optionLabelPath')];
-				this.set('value', value);
-				this.set('name', name);
-			}
-		},
+    didInsertElement: function didInsertElement() {
+      var codeView = document.getElementById(this.get('id'));
+      var langMap = {
+        'js': KcodeviewJs(codeView),
+        'css': KcodeviewCss(codeView),
+        'html': KcodeviewHtml(codeView)
+      };
+      var myCodeView = langMap[this.get('lang')];
+      myCodeView.init({
+        'font-size': '18px',
+        'line-height': '28px'
+      });
+    },
 
-		// 生成随机字符串
-		randomString: function randomString(len) {
-			len = len || 32;
-			/****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
-			var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
-			var maxPos = $chars.length;
-			var pwd = '';
-			for (var i = 0; i < len; i++) {
-				pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
-			}
-			return pwd;
-		}
-	});
+    // 生成随机字符串
+    randomString: function randomString(len) {
+      len = len || 32;
+      /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
+      var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+      var maxPos = $chars.length;
+      var pwd = '';
+      for (var i = 0; i < len; i++) {
+        pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+      }
+      return pwd;
+    }
+  });
 });
-define("ember-my-radios/components/my-radios/template", ["exports"], function (exports) {
+define("ember-my-radios/components/code-view/template", ["exports"], function (exports) {
   "use strict";
 
   exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@2.8.3",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 3,
-                "column": 4
-              },
-              "end": {
-                "line": 6,
-                "column": 4
-              }
-            },
-            "moduleName": "modules/ember-my-radios/components/my-radios/template.hbs"
-          },
-          isEmpty: false,
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("        ");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createElement("input");
-            dom.setAttribute(el1, "type", "radio");
-            dom.setAttribute(el1, "checked", "checked");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n        ");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createElement("span");
-            var el2 = dom.createComment("");
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element1 = dom.childAt(fragment, [1]);
-            if (this.cachedFragment) {
-              dom.repairClonedNode(element1, [], true);
-            }
-            var morphs = new Array(3);
-            morphs[0] = dom.createAttrMorph(element1, 'value');
-            morphs[1] = dom.createAttrMorph(element1, 'name');
-            morphs[2] = dom.createMorphAt(dom.childAt(fragment, [3]), 0, 0);
-            return morphs;
-          },
-          statements: [["attribute", "value", ["subexpr", "obj-val", [["get", "item", ["loc", [null, [4, 44], [4, 48]]], 0, 0, 0, 0], ["get", "optionValuePath", ["loc", [null, [4, 49], [4, 64]]], 0, 0, 0, 0]], [], ["loc", [null, [null, null], [4, 66]]], 0, 0], 0, 0, 0, 0], ["attribute", "name", ["get", "inputName", ["loc", [null, [4, 74], [4, 83]]], 0, 0, 0, 0], 0, 0, 0, 0], ["inline", "obj-val", [["get", "item", ["loc", [null, [5, 24], [5, 28]]], 0, 0, 0, 0], ["get", "optionLabelPath", ["loc", [null, [5, 29], [5, 44]]], 0, 0, 0, 0]], [], ["loc", [null, [5, 14], [5, 46]]], 0, 0]],
-          locals: [],
-          templates: []
-        };
-      })();
-      var child1 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@2.8.3",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 6,
-                "column": 4
-              },
-              "end": {
-                "line": 9,
-                "column": 4
-              }
-            },
-            "moduleName": "modules/ember-my-radios/components/my-radios/template.hbs"
-          },
-          isEmpty: false,
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("        ");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n        ");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createElement("span");
-            var el2 = dom.createComment("");
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element0 = dom.childAt(fragment, [3]);
-            var morphs = new Array(3);
-            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            morphs[1] = dom.createElementMorph(element0);
-            morphs[2] = dom.createMorphAt(element0, 0, 0);
-            return morphs;
-          },
-          statements: [["inline", "input", [], ["type", "radio", "value", ["subexpr", "obj-val", [["get", "item", ["loc", [null, [7, 44], [7, 48]]], 0, 0, 0, 0], ["get", "optionValuePath", ["loc", [null, [7, 49], [7, 64]]], 0, 0, 0, 0]], [], ["loc", [null, [7, 35], [7, 65]]], 0, 0], "name", ["subexpr", "@mut", [["get", "inputName", ["loc", [null, [7, 71], [7, 80]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [7, 8], [7, 82]]], 0, 0], ["element", "action", ["select", ["get", "index", ["loc", [null, [8, 32], [8, 37]]], 0, 0, 0, 0]], [], ["loc", [null, [8, 14], [8, 39]]], 0, 0], ["inline", "obj-val", [["get", "item", ["loc", [null, [8, 50], [8, 54]]], 0, 0, 0, 0], ["get", "optionLabelPath", ["loc", [null, [8, 55], [8, 70]]], 0, 0, 0, 0]], [], ["loc", [null, [8, 40], [8, 72]]], 0, 0]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@2.8.3",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 11,
-              "column": 0
-            }
-          },
-          "moduleName": "modules/ember-my-radios/components/my-radios/template.hbs"
-        },
-        isEmpty: false,
-        arity: 2,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createElement("label");
-          var el2 = dom.createTextNode("\n");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
-          return morphs;
-        },
-        statements: [["block", "if", [["subexpr", "is-or", [["subexpr", "is-eq", [["subexpr", "obj-val", [["get", "item", ["loc", [null, [3, 33], [3, 37]]], 0, 0, 0, 0], ["get", "optionValuePath", ["loc", [null, [3, 38], [3, 53]]], 0, 0, 0, 0]], [], ["loc", [null, [3, 24], [3, 54]]], 0, 0], ["get", "value", ["loc", [null, [3, 55], [3, 60]]], 0, 0, 0, 0]], [], ["loc", [null, [3, 17], [3, 61]]], 0, 0], ["subexpr", "is-eq", [["subexpr", "obj-val", [["get", "item", ["loc", [null, [3, 78], [3, 82]]], 0, 0, 0, 0], ["get", "optionLabelPath", ["loc", [null, [3, 83], [3, 98]]], 0, 0, 0, 0]], [], ["loc", [null, [3, 69], [3, 99]]], 0, 0], ["get", "name", ["loc", [null, [3, 100], [3, 104]]], 0, 0, 0, 0]], [], ["loc", [null, [3, 62], [3, 105]]], 0, 0]], [], ["loc", [null, [3, 10], [3, 107]]], 0, 0]], [], 0, 1, ["loc", [null, [3, 4], [9, 11]]]]],
-        locals: ["item", "index"],
-        templates: [child0, child1]
-      };
-    })();
     return {
       meta: {
         "revision": "Ember@2.8.3",
@@ -84050,11 +85041,11 @@ define("ember-my-radios/components/my-radios/template", ["exports"], function (e
             "column": 0
           },
           "end": {
-            "line": 12,
-            "column": 0
+            "line": 4,
+            "column": 6
           }
         },
-        "moduleName": "modules/ember-my-radios/components/my-radios/template.hbs"
+        "moduleName": "modules/ember-my-radios/components/code-view/template.hbs"
       },
       isEmpty: false,
       arity: 0,
@@ -84062,20 +85053,33 @@ define("ember-my-radios/components/my-radios/template", ["exports"], function (e
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "ky-codeview-wrap");
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("pre");
+        var el3 = dom.createElement("code");
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
+        var element0 = dom.childAt(fragment, [0]);
+        var morphs = new Array(2);
+        morphs[0] = dom.createAttrMorph(element0, 'id');
+        morphs[1] = dom.createMorphAt(dom.childAt(element0, [1, 0]), 1, 1);
         return morphs;
       },
-      statements: [["block", "each", [["get", "content", ["loc", [null, [1, 8], [1, 15]]], 0, 0, 0, 0]], [], 0, null, ["loc", [null, [1, 0], [11, 9]]]]],
+      statements: [["attribute", "id", ["concat", [["get", "id", ["loc", [null, [1, 36], [1, 38]]], 0, 0, 0, 0]], 0, 0, 0, 0, 0], 0, 0, 0, 0], ["content", "yield", ["loc", [null, [3, 0], [3, 9]]], 0, 0, 0, 0]],
       locals: [],
-      templates: [child0]
+      templates: []
     };
   })());
 });

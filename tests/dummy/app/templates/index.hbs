@@ -1,10 +1,60 @@
-{{my-radios
-    content=model.list
-    optionValuePath="valx"
-    optionLabelPath="fname"
-    value=model.curr.val
-    name=model.curr.name
-}}
-<h4>
-    {{model.curr.val}} - {{model.curr.name}}
-</h4>
+<h3>js代码</h3>
+{{#code-view lang="js"}}
+// 组件初始化
+var obj = {
+    'font-size': '18px',
+    'line-height': '28px'
+};
+var myCodeView = KcodeviewJs(codeViewJs);
+myCodeView.init(obj);
+
+press.onclick = function() {
+    var res = myCodeView.getCode();
+    alert(res);
+}
+/*其他测试*/
+function getSum() {
+    var sum = 0;
+    for (var i = 0; i &lt;= 100; i++) {
+        sum += i;
+    }
+    return sum;
+}
+console.log(getSum());{{/code-view}}
+<hr>
+<h3>css代码</h3>
+{{#code-view lang="css"}}
+@import "./app.less";
+
+h1 {
+    font-size: "36px";
+    z-index: 100;
+    span {
+        font-family: "Microsoft yahei";
+    }
+}
+#header {
+    font-size: "50px";
+}
+.page-title {
+    padding: "10px";
+}
+table {
+    width: "400px"; 
+    line-height: "24px";
+}{{/code-view}}
+<hr>
+<h3>html代码</h3>
+{{#code-view lang="html"}}
+<!-- loading 加载图标 -->
+<section>
+    <div class="load-wrap">
+        <!--
+            loading
+            加载图标
+        -->
+        <div id="myLoading" data-time=200></div>
+    </div>
+    <img src="https://www.baidu.com" class="small-img J-cover-img" alt="testimg" />
+    <hr />
+</section>{{/code-view}}

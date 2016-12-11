@@ -32,106 +32,21 @@ define('dummy/components/app-version', ['exports', 'ember-cli-app-version/compon
     name: name
   });
 });
-define('dummy/components/my-radios', ['exports', 'ember-my-radios/components/my-radios/component'], function (exports, _emberMyRadiosComponentsMyRadiosComponent) {
+define('dummy/components/code-view', ['exports', 'ember-my-radios/components/code-view/component'], function (exports, _emberMyRadiosComponentsCodeViewComponent) {
   Object.defineProperty(exports, 'default', {
     enumerable: true,
     get: function get() {
-      return _emberMyRadiosComponentsMyRadiosComponent['default'];
+      return _emberMyRadiosComponentsCodeViewComponent['default'];
     }
   });
 });
-define('dummy/helpers/add-one', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Helper.helper(function (base) {
-        return +base + 1;
-    });
-});
-define('dummy/helpers/arr-val', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports.readArrVal = readArrVal;
-
-  function readArrVal(_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var arr = _ref2[0];
-    var index = _ref2[1];
-
-    arr = arr || [];
-    return arr[index];
-  }
-
-  exports['default'] = _ember['default'].Helper.helper(readArrVal);
-});
-define('dummy/helpers/concat', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Helper.helper(function (base, rest) {
-        return base.concat(rest);
-    });
-});
-define('dummy/helpers/default-val', ['exports', 'ember'], function (exports, _ember) {
-	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-	exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-		var _ref2 = _slicedToArray(_ref, 2);
-
-		var value = _ref2[0];
-		var defaultValue = _ref2[1];
-
-		return value != null && value != '' ? value : defaultValue;
-	});
-});
-define('dummy/helpers/divide-toint', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var value = _ref2[0];
-    var divisor = _ref2[1];
-
-    return parseInt(value / divisor);
-  });
-});
-define('dummy/helpers/divide', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var value = _ref2[0];
-    var divisor = _ref2[1];
-
-    return value / divisor;
-  });
-});
-define('dummy/helpers/is-and', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Helper.helper(function (args) {
-        var flag = true;
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-            for (var _iterator = args[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                var value = _step.value;
-
-                flag = flag && value;
-            }
-        } catch (err) {
-            _didIteratorError = true;
-            _iteratorError = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion && _iterator['return']) {
-                    _iterator['return']();
-                }
-            } finally {
-                if (_didIteratorError) {
-                    throw _iteratorError;
-                }
+define('dummy/controllers/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        actions: {
+            getCode: function getCode(code) {
+                alert(code);
             }
         }
-
-        return flag;
     });
 });
 define('dummy/helpers/is-eq', ['exports', 'ember'], function (exports, _ember) {
@@ -145,157 +60,6 @@ define('dummy/helpers/is-eq', ['exports', 'ember'], function (exports, _ember) {
 
     return leftSide == rightSide;
   });
-});
-define('dummy/helpers/is-gt', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var leftSide = _ref2[0];
-    var rightSide = _ref2[1];
-
-    return leftSide > rightSide;
-  });
-});
-define('dummy/helpers/is-gte', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var leftSide = _ref2[0];
-    var rightSide = _ref2[1];
-
-    return leftSide >= rightSide;
-  });
-});
-define('dummy/helpers/is-lt', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var leftSide = _ref2[0];
-    var rightSide = _ref2[1];
-
-    return leftSide < rightSide;
-  });
-});
-define('dummy/helpers/is-neq', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var leftSide = _ref2[0];
-    var rightSide = _ref2[1];
-
-    return leftSide !== rightSide;
-  });
-});
-define('dummy/helpers/is-not', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports.isNot = isNot;
-
-  function isNot(_ref /* , hash*/) {
-    var _ref2 = _slicedToArray(_ref, 1);
-
-    var value = _ref2[0];
-
-    return !value;
-  }
-
-  exports['default'] = _ember['default'].Helper.helper(isNot);
-});
-define('dummy/helpers/is-or', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Helper.helper(function (args) {
-        var flag = false;
-        // for(let i = 0; i < args.length; i++) {
-        //     if(args[i] === true){
-        //         flag = true;
-        //         break;
-        //     }
-        // }
-
-        // for(let i = 0; i < args.length; i++) {
-        //     flag = flag || args[i];
-        // }
-
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-            for (var _iterator = args[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                var value = _step.value;
-
-                flag = flag || value;
-            }
-        } catch (err) {
-            _didIteratorError = true;
-            _iteratorError = err;
-        } finally {
-            try {
-                if (!_iteratorNormalCompletion && _iterator['return']) {
-                    _iterator['return']();
-                }
-            } finally {
-                if (_didIteratorError) {
-                    throw _iteratorError;
-                }
-            }
-        }
-
-        return flag;
-    });
-});
-define('dummy/helpers/min', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var a = _ref2[0];
-    var b = _ref2[1];
-
-    return Math.min(a, b);
-  });
-});
-define('dummy/helpers/multiply', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var value = _ref2[0];
-    var multiplier = _ref2[1];
-
-    return value * multiplier;
-  });
-});
-define('dummy/helpers/not', ['exports', 'ember'], function (exports, _ember) {
-    var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-    exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 1);
-
-        var value = _ref2[0];
-
-        return !value;
-    });
-});
-define('dummy/helpers/obj-to-string', ['exports', 'ember'], function (exports, _ember) {
-	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-	exports['default'] = _ember['default'].Helper.helper(function (_ref) {
-		var _ref2 = _slicedToArray(_ref, 1);
-
-		var obj = _ref2[0];
-
-		return JSON.stringify(obj);
-	});
 });
 define('dummy/helpers/obj-val', ['exports', 'ember'], function (exports, _ember) {
     var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
@@ -317,26 +81,6 @@ define('dummy/helpers/obj-val', ['exports', 'ember'], function (exports, _ember)
 define('dummy/helpers/pluralize', ['exports', 'ember-inflector/lib/helpers/pluralize'], function (exports, _emberInflectorLibHelpersPluralize) {
   exports['default'] = _emberInflectorLibHelpersPluralize['default'];
 });
-define('dummy/helpers/read-path', ['exports', 'ember'], function (exports, _ember) {
-  var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
-
-  exports.readPath = readPath;
-
-  function readPath(_ref /* , hash*/) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var obj = _ref2[0];
-    var path = _ref2[1];
-
-    obj = obj || {};
-    return _ember['default'].get(obj, String(path));
-  }
-
-  exports['default'] = _ember['default'].Helper.helper(readPath);
-});
-//
-// Shamelessly copied from http://jsbin.com/fotuqa
-//
 define('dummy/helpers/singularize', ['exports', 'ember-inflector/lib/helpers/singularize'], function (exports, _emberInflectorLibHelpersSingularize) {
   exports['default'] = _emberInflectorLibHelpersSingularize['default'];
 });
@@ -528,14 +272,11 @@ define('dummy/routes/index', ['exports', 'ember'], function (exports, _ember) {
         routeName: 'index',
         listUrl: '',
 
-        list: [{ valx: '1', fname: '影视' }, { valx: '2', fname: '艺术' }, { valx: '3', fname: '剧目' }, { valx: '4', fname: '其它' }],
-
-        curr: { val: '3', name: '剧目' },
+        codeContent: '',
 
         model: function model() {
             return _ember['default'].RSVP.hash({
-                list: this.get('list'),
-                curr: this.get('curr')
+                codeContent: this.get('codeContent')
             });
         }
 
@@ -582,7 +323,7 @@ define("dummy/templates/application", ["exports"], function (exports) {
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("h1");
-        var el4 = dom.createTextNode("Ember radios");
+        var el4 = dom.createTextNode("ember-code-view");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n        ");
@@ -616,6 +357,145 @@ define("dummy/templates/application", ["exports"], function (exports) {
 });
 define("dummy/templates/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@2.8.3",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 2,
+              "column": 0
+            },
+            "end": {
+              "line": 23,
+              "column": 22
+            }
+          },
+          "moduleName": "dummy/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("// 组件初始化\nvar obj = {\n    'font-size': '18px',\n    'line-height': '28px'\n};\nvar myCodeView = KcodeviewJs(codeViewJs);\nmyCodeView.init(obj);\n\npress.onclick = function() {\n    var res = myCodeView.getCode();\n    alert(res);\n}\n/*其他测试*/\nfunction getSum() {\n    var sum = 0;\n    for (var i = 0; i <= 100; i++) {\n        sum += i;\n    }\n    return sum;\n}\nconsole.log(getSum());");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@2.8.3",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 26,
+              "column": 0
+            },
+            "end": {
+              "line": 45,
+              "column": 1
+            }
+          },
+          "moduleName": "dummy/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("@import \"./app.less\";\n\nh1 {\n    font-size: \"36px\";\n    z-index: 100;\n    span {\n        font-family: \"Microsoft yahei\";\n    }\n}\n#header {\n    font-size: \"50px\";\n}\n.page-title {\n    padding: \"10px\";\n}\ntable {\n    width: \"400px\"; \n    line-height: \"24px\";\n}");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child2 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@2.8.3",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 48,
+              "column": 0
+            },
+            "end": {
+              "line": 60,
+              "column": 10
+            }
+          },
+          "moduleName": "dummy/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment(" loading 加载图标 ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("section");
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2, "class", "load-wrap");
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("\n            loading\n            加载图标\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createElement("div");
+          dom.setAttribute(el3, "id", "myLoading");
+          dom.setAttribute(el3, "data-time", "200");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n    ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("img");
+          dom.setAttribute(el2, "src", "https://www.baidu.com");
+          dom.setAttribute(el2, "class", "small-img J-cover-img");
+          dom.setAttribute(el2, "alt", "testimg");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("hr");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
     return {
       meta: {
         "revision": "Ember@2.8.3",
@@ -626,7 +506,7 @@ define("dummy/templates/index", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 11,
+            "line": 61,
             "column": 0
           }
         },
@@ -638,38 +518,56 @@ define("dummy/templates/index", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("h3");
+        var el2 = dom.createTextNode("js代码");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
-        var el1 = dom.createElement("h4");
-        var el2 = dom.createTextNode("\n    ");
+        var el1 = dom.createElement("hr");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("h3");
+        var el2 = dom.createTextNode("css代码");
         dom.appendChild(el1, el2);
-        var el2 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("hr");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("h3");
+        var el2 = dom.createTextNode("html代码");
         dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode(" - ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
-        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [2]);
         var morphs = new Array(3);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createMorphAt(element0, 1, 1);
-        morphs[2] = dom.createMorphAt(element0, 3, 3);
-        dom.insertBoundary(fragment, 0);
+        morphs[0] = dom.createMorphAt(fragment, 2, 2, contextualElement);
+        morphs[1] = dom.createMorphAt(fragment, 8, 8, contextualElement);
+        morphs[2] = dom.createMorphAt(fragment, 14, 14, contextualElement);
         return morphs;
       },
-      statements: [["inline", "my-radios", [], ["content", ["subexpr", "@mut", [["get", "model.list", ["loc", [null, [2, 12], [2, 22]]], 0, 0, 0, 0]], [], [], 0, 0], "optionValuePath", "valx", "optionLabelPath", "fname", "value", ["subexpr", "@mut", [["get", "model.curr.val", ["loc", [null, [5, 10], [5, 24]]], 0, 0, 0, 0]], [], [], 0, 0], "name", ["subexpr", "@mut", [["get", "model.curr.name", ["loc", [null, [6, 9], [6, 24]]], 0, 0, 0, 0]], [], [], 0, 0]], ["loc", [null, [1, 0], [7, 2]]], 0, 0], ["content", "model.curr.val", ["loc", [null, [9, 4], [9, 22]]], 0, 0, 0, 0], ["content", "model.curr.name", ["loc", [null, [9, 25], [9, 44]]], 0, 0, 0, 0]],
+      statements: [["block", "code-view", [], ["lang", "js"], 0, null, ["loc", [null, [2, 0], [23, 36]]]], ["block", "code-view", [], ["lang", "css"], 1, null, ["loc", [null, [26, 0], [45, 15]]]], ["block", "code-view", [], ["lang", "html"], 2, null, ["loc", [null, [48, 0], [60, 24]]]]],
       locals: [],
-      templates: []
+      templates: [child0, child1, child2]
     };
   })());
 });
@@ -709,7 +607,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("dummy/app")["default"].create({"name":"ember-code-view","version":"0.0.0+9bbe6d87"});
+  require("dummy/app")["default"].create({"name":"ember-code-view","version":"0.0.0+05728648"});
 }
 
 /* jshint ignore:end */

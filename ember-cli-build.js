@@ -14,5 +14,11 @@ module.exports = function(defaults) {
     behave. You most likely want to be modifying `./index.js` or app's build file
   */
 
+  app.import('vendor/kcodeview/KylinJS.js')
+  app.import('vendor/kcodeview/kcodeview-js.js');
+  app.import('vendor/kcodeview/kcodeview-css.js');
+  app.import('vendor/kcodeview/kcodeview-html.js');
+  app.import('vendor/kcodeview/kcodeview.css');
+
   return app.toTree();
 };
