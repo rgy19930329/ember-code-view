@@ -8,8 +8,37 @@ Ember implementation of custom code-viewer, make code hightlight(html, js, css).
 step1: template.hbs
 
 ```
+{{#code-view lang="js"}}
+// write js code
+{{/code-view}}
+
+{{#code-view lang="css"}}
+// write css code
+{{/code-view}}
+
+{{#code-view lang="html"}}
+// write html code
+{{/code-view}}
+```
+
+step2: copy kcodeview
+
+copy ember-code-view/vendor/kcodeview to your-project/vendor/kcodeview
+
+step3: pull in kcodeview
+
+add this code in your-project/ember-cli-bulid.js
 
 ```
+app.import('vendor/kcodeview/KylinJS.js')
+app.import('vendor/kcodeview/kcodeview-js.js');
+app.import('vendor/kcodeview/kcodeview-css.js');
+app.import('vendor/kcodeview/kcodeview-html.js');
+app.import('vendor/kcodeview/kcodeview.css');
+```
+
+end of Guide，that's all.
+
 
 ## Access on Line
 
